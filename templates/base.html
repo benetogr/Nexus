@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>LDAP Contact Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+    }
+
+    .toast {
+        background: white;
+        margin-bottom: 10px;
+        padding: 15px;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        min-width: 250px;
+        animation: slideIn 0.3s ease-in;
+    }
+
+    .toast.success {
+        border-left: 4px solid #28a745;
+    }
+
+    .toast.error {
+        border-left: 4px solid #dc3545;
+    }
+
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+    </style>
+    <!-- Add jQuery reference before our script -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <nav>
+        <div class="nav-left">
+            <h1>LDAP Contact Manager</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('settings') }}" class="nav-link">Settings</a>
+                <button id="syncButton" title="Synchronize with LDAP directory">Sync Now</button>
+                <button id="debugMenuButton" class="button debug">Debug</button>
+                <div id="debugMenuDropdown" class="dropdown-content">
+                    <a href="#" onclick="alert('Debug Action 1');">Debug Action 1</a>
+                    <a href="#" onclick="createTestNotification();">Create Test Notification</a>
+                    <a href="#" onclick="dropAllContacts();" class="danger">Drop All Contacts</a>
+                    <a href="#" onclick="alert('Debug Action 2');">Debug Action 2</a>
+                </div>
+            </div>
+        </div>
+        <div class="nav-right">
+            <button id="notificationsButton" class="notifications-btn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
+                </svg>
+                <span class="notifications-badge">2</span>
+            </button>
+            <span class="stat-badge">
+                LDAP: {{ ldap_contacts }} | Active: {{ active_contacts }}
+            </span>
+
+            <!-- Debug menu -->
+        </div>
+    </nav>
+    
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <div id="notificationsModal" class="modal">
+        <div class="modal-content notifications-modal">
+            <div class="modal-header">
+                <h2>Notifications</h2>
+                <span class="close" onclick="closeNotificationsModal()">&times;</span>
+            </div>
+            <div id="notificationsList" class="notifications-list">
+                <!-- Notifications will be loaded dynamically -->
+            </div>
+            <div class="modal-actions notifications-actions">
+                <button onclick="markAllAsRead()" class="button mark-read">Mark All as Read</button>
+                <button onclick="clearAllNotifications()" class="button clear-all">Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container"></div>
+
+    <!-- Load script.js first -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const notificationsBtn = document.getElementById('notificationsButton');
+        const notificationsModal = document.getElementById('notificationsModal');
+        const notificationsList = document.getElementById('notificationsList');
+        
+        notificationsBtn.addEventListener('click', function() {
+            loadNotifications();
+            notificationsModal.style.display = 'block';
+            document.body.classList.add('modal-open');
+        });
+        
+        function closeNotificationsModal() {
+            notificationsModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
+        
+        window.closeNotificationsModal = closeNotificationsModal;
+
+        const debugBtn = document.getElementById('debugMenuButton');
+        const debugDropdown = document.getElementById('debugMenuDropdown');
+
+        debugBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            debugDropdown.style.display = (debugDropdown.style.display === 'block') ? 'none' : 'block';
+        });
+        
+        // IMPORTANT: Clear any existing event handlers for the sync button
+        const syncButton = document.getElementById('syncButton');
+        // Clone and replace the button to remove ALL event handlers
+        if (syncButton) {
+            const newSyncButton = syncButton.cloneNode(true);
+            syncButton.parentNode.replaceChild(newSyncButton, syncButton);
+            
+            // Now add our single event handler
+            newSyncButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Show confirmation dialog
+                if (confirm('Are you sure you want to synchronize contacts from LDAP?')) {
+                    // Show loading indicator
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Syncing...';
+                    
+                    // Make AJAX call to sync endpoint using fetch API
+                    fetch('/sync', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            alert(data.message);
+                            // Reload the page to show updated contacts
+                            location.reload();
+                        } else if (data.has_conflicts) {
+                            alert(data.message);
+                            // Redirect to conflicts page
+                            window.location.href = '/conflicts';
+                        } else {
+                            // Show error message
+                            alert('Error: ' + (data.error || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        // Show error message
+                        alert('Error: ' + error);
+                    })
+                    .finally(() => {
+                        // Reset button state
+                        this.disabled = false;
+                        this.innerHTML = 'Sync Now';
+                    });
+                }
+            });
+            
+            console.log("Single sync button handler configured");
+        }
+    });
+
+    function loadNotifications() {
+        fetch('/notifications')
+            .then(response => response.json())
+            .then(data => {
+                const notificationsList = document.getElementById('notificationsList');
+                notificationsList.innerHTML = '';
+                
+                if (data.notifications.length === 0) {
+                    notificationsList.innerHTML = '<div class="notification-empty">No notifications</div>';
+                    return;
+                }
+
+                data.notifications.forEach(notification => {
+                    const notificationItem = document.createElement('div');
+                    notificationItem.className = `notification-item${notification.unread ? ' unread' : ''}`;
+                    notificationItem.innerHTML = `
+                        <div class="notification-content">
+                            <h4>${notification.title}</h4>
+                            <p>${notification.message}</p>
+                            <span class="notification-time">${notification.time_ago}</span>
+                        </div>
+                    `;
+                    notificationsList.appendChild(notificationItem);
+                });
+
+                // Update badge count
+                const badge = document.querySelector('.notifications-badge');
+                const unreadCount = data.notifications.filter(n => n.unread).length;
+                badge.textContent = unreadCount;
+                badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            });
+    }
+
+    function markAllAsRead() {
+        fetch('/notifications/mark-all-read', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadNotifications();
+                }
+            });
+    }
+
+    function clearAllNotifications() {
+        if (confirm('Are you sure you want to clear all notifications?')) {
+            fetch('/notifications/clear-all', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadNotifications();
+                    }
+                });
+        }
+    }
+
+    function createTestNotification() {
+        fetch('/notifications/create-test', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: 'Test Notification',
+                message: 'This is a test notification created from debug menu.'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadNotifications();  // Refresh notifications display
+            } else {
+                alert('Failed to create notification: ' + data.error);
+            }
+        });
+    }
+
+    function dropAllContacts() {
+        if (confirm('WARNING: This will delete ALL contacts from the database! This cannot be undone. Are you absolutely sure?')) {
+            if (confirm('FINAL WARNING: All contacts will be permanently deleted. Continue?')) {
+                fetch('/debug/drop-all-contacts', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('All contacts have been deleted. ' + data.message);
+                        location.reload(); // Reload to update counts
+                    } else {
+                        alert('Failed to delete contacts: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                });
+            }
+        }
+    }
+
+    function showToast(type, message) {
+        const container = document.querySelector('.toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = message;
+        container.appendChild(toast);
+
+        // Remove toast after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s ease-out';
+            setTimeout(() => container.removeChild(toast), 300);
+        }, 3000);
+    }
+    </script>
+</body>
+</html>

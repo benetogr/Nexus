@@ -1,0 +1,446 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="settings-layout">
+    <!-- Side Navigation -->
+    <div class="settings-nav">
+        <h3>Settings</h3>
+        <ul>
+            {% for category in settings_by_category.keys() %}
+            <li>
+                <a href="{{ url_for('settings', category=category) }}" 
+                   class="{% if active_category == category %}active{% endif %}">
+                    {% if category == 'data_management' %}Data Management
+                    {% elif category == 'cucm' %}CUCM Settings
+                    {% else %}{{ category.title() }}{% endif %}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Settings Content -->
+    <div class="settings-content">
+        {% if active_category %}
+        <div class="settings-header">
+            <h2>
+                {% if active_category == 'data_management' %}
+                    Data Management Settings
+                {% elif active_category == 'cucm' %}
+                    CUCM Integration Settings
+                {% else %}
+                    {{ active_category.title() }} Settings
+                {% endif %}
+            </h2>
+        </div>
+        
+        <form id="settingsForm" method="POST" action="{{ url_for('save_settings', category=active_category) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            {% if active_category == 'ldap' %}
+            <div class="ldap-test">
+                <button type="button" id="testLdapButton" class="test-connection" onclick="testLdapConnection(); return false;">
+                    Test LDAP Connection
+                </button>
+                <span id="ldapStatus" class="connection-status"></span>
+            </div>
+            {% endif %}
+
+            {% if active_category == 'cucm' %}
+            <div class="cucm-info">
+                <p>Configure Cisco Unified Communications Manager (CUCM) integration settings.</p>
+                <p>These settings are used for phone lookups and status checks.</p>
+                <div class="cucm-test">
+                    <button type="button" id="testCucmButton" class="test-connection">
+                        Test CUCM Connection
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            {% for setting in settings_by_category[active_category] %}
+            <div class="setting-item">
+                <label for="{{ setting.key }}">{{ setting.description }}</label>
+                {% if setting.type == 'boolean' %}
+                    <input type="checkbox" name="{{ setting.key }}" id="{{ setting.key }}" value="True"
+                           {% if setting.value == 'True' %}checked{% endif %}>
+                {% elif setting.type == 'text' %}
+                    <textarea name="{{ setting.key }}" id="{{ setting.key }}" 
+                              class="form-control" rows="6">{{ setting.value }}</textarea>
+                {% else %}
+                    <input type="{{ 'password' if 'password' in setting.key.lower() else 'text' }}"
+                           name="{{ setting.key }}" id="{{ setting.key }}"
+                           value="{{ setting.value }}" class="form-control">
+                    {% if setting.key == 'CUCM_VERSION' %}
+                    <small class="help-text">
+                        Enter only major.minor.patch (e.g., 14.0.1 from "System version: 14.0.1.13900-155")<br>
+                        To find your version: Login to CUCM Admin -> Help -> About<br>
+                        Or via SSH: run 'show version active'
+                    </small>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            {% if active_category == 'data_management' %}
+            <div class="action-buttons">
+                <button type="button" onclick="window.location.href='{{ url_for('export_csv') }}'" class="button export">
+                    Export Contacts to CSV
+                </button>
+                <div class="import-group">
+                    <button type="button" onclick="document.getElementById('importCsv').click()" class="button import">
+                        Import CSV
+                    </button>
+                    <button type="button" onclick="showImportHelp()" class="button help" title="Import Format Help">
+                        <svg viewBox="0 0 24 24" width="16" height="16">
+                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                        </svg>
+                    </button>
+                    <input type="file" id="importCsv" accept=".csv" style="display: none;" onchange="handleCsvImport(this)">
+                </div>
+            </div>
+            {% if conflicts %}
+            <div class="conflicts-section">
+                <h3>UID Conflicts</h3>
+                <p>The following contacts have conflicting UIDs between manual entries and LDAP:</p>
+                <div class="conflicts-list">
+                    {% for contact in conflicts %}
+                    <div class="conflict-item" data-id="{{ contact.id }}">
+                        <div class="conflict-details">
+                            <h4>{{ contact.full_name }} ({{ contact.uid }})</h4>
+                            <p>Manual entry conflicts with LDAP entry</p>
+                        </div>
+                        <div class="conflict-actions">
+                            <button onclick="resolveConflict({{ contact.id }}, 'keep_manual')" class="button">
+                                Keep Manual Entry
+                            </button>
+                            <button onclick="resolveConflict({{ contact.id }}, 'use_ldap')" class="button">
+                                Use LDAP Data
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <div class="form-actions">
+                <button type="submit" class="button save-settings">
+                    Save {% if active_category == 'data_management' %}Data Management{% else %}{{ active_category.title() }}{% endif %} Settings
+                </button>
+            </div>
+        </form>
+        {% else %}
+        <div class="settings-welcome">
+            <h2>Application Settings</h2>
+            <p>Select a category from the side menu to configure settings.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Import Help Modal -->
+<div id="importHelpModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>CSV Import Format</h2>
+            <span class="close" onclick="closeImportHelp()">&times;</span>
+        </div>
+        <div class="import-help-content">
+            <h3>Required CSV Format:</h3>
+            <div class="code-example">
+                <pre>username,mac,pin
+user1,00:11:22:33:44:55,1234
+user2,,5678
+user3,AA:BB:CC:DD:EE:FF,</pre>
+            </div>
+            <h4>Column Requirements:</h4>
+            <ul>
+                <li><strong>username:</strong> LDAP username (must match existing contact)</li>
+                <li><strong>mac:</strong> MAC address (optional, with or without colons)</li>
+                <li><strong>pin:</strong> PIN number (optional)</li>
+            </ul>
+            <div class="notes">
+                <p><strong>Notes:</strong></p>
+                <ul>
+                    <li>First row must contain column headers</li>
+                    <li>Values should be comma-separated</li>
+                    <li>Both MAC addresses and PINs are optional and can be left empty</li>
+                    <li>Empty fields will not overwrite existing values</li>
+                    <li>MAC addresses will be automatically formatted if provided</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Import Preview Modal -->
+<div id="importPreviewModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Import Preview</h2>
+            <span class="close" onclick="closeImportModal()">&times;</span>
+        </div>
+        <div class="preview-content">
+            <div id="importSummary"></div>
+            <div class="table-container">
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Current MAC</th>
+                            <th>New MAC</th>
+                            <th>Current PIN</th>
+                            <th>New PIN</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTableBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-actions">
+                <button onclick="confirmImport()" class="button import">Confirm Import</button>
+                <button onclick="closeImportModal()" class="button cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="cucmTestModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>CUCM Connection Test</h2>
+            <span class="close" onclick="closeCucmTestModal()">&times;</span>
+        </div>
+        <div id="cucmTestResult" class="modal-body">
+            Testing CUCM connection...
+        </div>
+    </div>
+</div>
+
+<!-- Add this to your script section -->
+<script>
+function showImportHelp() {
+    document.getElementById('importHelpModal').style.display = 'block';
+    document.body.classList.add('modal-open');
+}
+
+function closeImportHelp() {
+    document.getElementById('importHelpModal').style.display = 'none';
+    document.body.classList.remove('modal-open');
+}
+
+function handleCsvImport(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const csv = e.target.result;
+            fetch('/preview-import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ csv_data: csv })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showImportPreview(data.preview);
+                } else {
+                    alert('Error processing CSV: ' + data.error);
+                }
+            });
+        };
+        reader.readAsText(file);
+    }
+}
+
+function resolveConflict(contactId, action) {
+    // Implement the conflict resolution logic
+    fetch('/resolve-conflict', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            contact_id: contactId,
+            action: action
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelector(`.conflict-item[data-id="${contactId}"]`).remove();
+            if (document.querySelectorAll('.conflict-item').length === 0) {
+                document.querySelector('.conflicts-section').remove();
+            }
+        } else {
+            alert('Error resolving conflict: ' + data.error);
+        }
+    });
+}
+
+function testLdapConnection() {
+    // Get LDAP settings from form
+    const server = document.getElementById('LDAP_SERVER').value;
+    const port = document.getElementById('LDAP_PORT').value;
+    const bindDn = document.getElementById('LDAP_BIND_DN').value;
+    const bindPassword = document.getElementById('LDAP_BIND_PASSWORD').value;
+    const baseDn = document.getElementById('LDAP_BASE_DN').value;
+    
+    const statusElement = document.getElementById('ldapStatus');
+    statusElement.textContent = 'Testing...';
+    statusElement.className = 'connection-status testing';
+    
+    fetch('/test-ldap-connection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            server: server,
+            port: port,
+            bind_dn: bindDn,
+            bind_password: bindPassword,
+            base_dn: baseDn
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusElement.textContent = 'Connected successfully!';
+            statusElement.className = 'connection-status success';
+        } else {
+            statusElement.textContent = 'Connection failed: ' + data.error;
+            statusElement.className = 'connection-status error';
+        }
+    })
+    .catch(error => {
+        statusElement.textContent = 'Request error: ' + error;
+        statusElement.className = 'connection-status error';
+    });
+}
+
+function showImportPreview(preview) {
+    const modal = document.getElementById('importPreviewModal');
+    const tbody = document.getElementById('previewTableBody');
+    const summary = document.getElementById('importSummary');
+    
+    summary.innerHTML = `
+        <p>Found ${preview.total} entries in CSV</p>
+        <p>Matching contacts: ${preview.matches}</p>
+        <p>Non-matching contacts: ${preview.nonmatches}</p>
+    `;
+    
+    tbody.innerHTML = '';
+    preview.entries.forEach(entry => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${entry.username}</td>
+            <td>${entry.current_mac || '-'}</td>
+            <td>${entry.new_mac || '-'}</td>
+            <td>${entry.current_pin || '-'}</td>
+            <td>${entry.new_pin || '-'}</td>
+            <td class="${entry.status === 'Match' ? 'match' : 'no-match'}">${entry.status}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    modal.style.display = 'block';
+}
+
+function closeImportModal() {
+    document.getElementById('importPreviewModal').style.display = 'none';
+    document.getElementById('importCsv').value = '';
+}
+
+function confirmImport() {
+    fetch('/confirm-import', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Import completed: ${data.updated} contacts updated`);
+            closeImportModal();
+            location.reload();
+        } else {
+            alert('Error during import: ' + data.error);
+        }
+    });
+}
+
+function closeCucmTestModal() {
+    document.getElementById('cucmTestModal').style.display = 'none';
+    document.body.classList.remove('modal-open');
+}
+
+// Add event listener for CUCM test button
+document.addEventListener('DOMContentLoaded', function() {
+    const cucmTestButton = document.getElementById('testCucmButton');
+    if (cucmTestButton) {
+        cucmTestButton.addEventListener('click', function() {
+            testCucmConnection();
+        });
+    }
+});
+
+function testCucmConnection() {
+    const modal = document.getElementById('cucmTestModal');
+    const resultDiv = document.getElementById('cucmTestResult');
+    
+    resultDiv.innerHTML = '<div class="loading">Testing CUCM connection...</div>';
+    modal.style.display = 'block';
+    document.body.classList.add('modal-open');
+    
+    // Get CUCM settings from form
+    const server = document.getElementById('CUCM_SERVER').value;
+    const username = document.getElementById('CUCM_USERNAME').value;
+    const password = document.getElementById('CUCM_PASSWORD').value;
+    const version = document.getElementById('CUCM_VERSION').value;
+    
+    fetch('/test-cucm-connection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            server: server,
+            username: username,
+            password: password,
+            version: version
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.innerHTML = `
+                <div class="success-message">
+                    <h3>Connection Successful</h3>
+                    <p>Successfully connected to CUCM server at ${server}</p>
+                    <p>Server info: ${data.server_info || 'Not available'}</p>
+                </div>
+            `;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="error-message">
+                    <h3>Connection Failed</h3>
+                    <p>Error: ${data.error}</p>
+                    <p>Please check your settings and try again.</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        resultDiv.innerHTML = `
+            <div class="error-message">
+                <h3>Request Error</h3>
+                <p>Failed to send request: ${error}</p>
+            </div>
+        `;
+    });
+}
+</script>
+{% endblock %}

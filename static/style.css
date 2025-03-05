@@ -1,0 +1,1997 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+}
+
+nav {
+    background-color: #333;
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    margin-left: auto;  /* Add this */
+}
+
+.stat-badge {
+    background: rgba(255, 255, 255, 0.2);  /* Make it more visible */
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;  /* Add this */
+    border: 1px solid rgba(255, 255, 255, 0.1);  /* Add this */
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+    background-color: #444;
+}
+
+.contacts-container {
+    max-width: 90%; /* Increased from 1200px to accommodate more columns */
+    margin: 2rem auto;
+    padding: 0 1rem;
+    overflow-x: auto; /* Enable horizontal scrolling if needed */
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0; /* Remove bottom margin */
+}
+
+.search-bar input {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-width: 300px;
+}
+
+.button.search,
+#searchButton {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    display: inline-flex; /* Add this */
+    align-items: center; /* Add this */
+}
+
+.button.search:hover,
+#searchButton:hover {
+    background: #0056b3;
+}
+
+.contact-card {
+    background-color: white;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.settings-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Remove .settings-section styles */
+
+.setting-item {
+    margin-bottom: 1rem;
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.setting-item input[type="text"],
+.setting-item input[type="password"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.save-settings {
+    background: #007bff;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    position: relative;  /* Add this for dropdown positioning */
+}
+
+#syncButton {
+    background: #28a745;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+#syncButton:hover {
+    background: #218838;
+}
+
+#syncButton:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: #6c757d;
+}
+
+#debugMenuButton {
+    background: #6c757d;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#debugMenuButton:hover {
+    background: #5a6268;
+}
+
+.nav-links .dropdown-content {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    min-width: 160px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    display: none;
+    z-index: 1000;
+    margin-top: 0.5rem;
+}
+
+.settings-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border: 1px solid white;
+    border-radius: 4px;
+}
+
+.alert {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+.database-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.ldap-test {
+    margin: 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.test-connection {
+    background: #6c757d;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.connection-status {
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.connection-status.testing {
+    background-color: #ffeeba;
+    color: #856404;
+}
+
+.connection-status.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.connection-status.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.contact-detail {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.contact-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.contact-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.info-section {
+    background: white;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.history-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding: 1rem;
+}
+
+.page-link {
+    color: #007bff;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.page-link:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+    color: #0056b3;
+}
+
+.current-page {
+    background-color: #007bff;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    border: 1px solid #007bff;
+}
+
+.ellipsis {
+    color: #6c757d;
+    padding: 0.5rem;
+}
+
+.contact-edit {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.edit-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.save-button {
+    background: #28a745;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.cancel-button {
+    background: #6c757d;
+    color: white;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.contacts-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 4px;
+    margin-bottom: 10rem; /* Increased margin for dropdown space */
+    min-width: 1200px; /* Ensure minimum width for all columns */
+}
+
+.contacts-table th,
+.contacts-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.contacts-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.contacts-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.contacts-table .actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: nowrap; /* Prevent buttons from wrapping */
+}
+
+.contacts-table td {
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px; /* Maximum width for cells */
+}
+
+.contacts-table td.actions {
+    white-space: nowrap;
+    overflow: visible; /* Change from hidden to visible */
+    max-width: none; /* Remove max-width for actions column */
+    min-width: 200px; /* Add minimum width for actions column */
+    padding-right: 1.5rem; /* Add more padding on the right */
+}
+
+.contacts-table td:hover {
+    white-space: normal; /* Show full text on hover */
+    overflow: visible;
+    position: relative;
+    background-color: #fff;
+    z-index: 1;
+}
+
+.button {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.button.edit {
+    background: #007bff;
+    color: white;
+}
+
+.button.delete {
+    background: #dc3545;
+    color: white;
+}
+
+.button.history {
+    background: #17a2b8;
+    color: white;
+}
+
+.button.history:hover {
+    background: #138496;
+}
+
+.button.import-all {
+    background: #28a745;
+    color: white;
+    margin-left: auto;
+    display: block;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.button.import-all:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.contact-row td a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.contact-row td a:hover {
+    text-decoration: underline;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+    overflow: hidden; /* Prevent background scroll */
+}
+
+.modal-content {
+    background-color: white;
+    margin: 1% auto;
+    padding: 20px;
+    width: 95%;
+    max-width: 1600px;
+    border-radius: 4px;
+    position: relative;
+    max-height: 95vh; /* Maximum height of 95% of viewport */
+    overflow-y: auto; /* Enable scrolling for modal content */
+    overflow-x: hidden;
+}
+
+body.modal-open {
+    overflow: hidden; /* Prevent body scroll when modal is open */
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.view-toggle .button {
+    padding: 0.5rem 1rem;
+    border: 1px solid #007bff;
+    color: #007bff;
+    background: white;
+    white-space: nowrap;
+}
+
+.view-toggle .button.active {
+    background: #007bff;
+    color: white;
+}
+
+.button.restore {
+    background: #28a745;
+    color: white;
+}
+
+.filters-form {
+    padding: 1rem;
+}
+
+.filter-group {
+    margin-bottom: 1rem;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.filter-checkbox {
+    margin-right: 0.5rem;
+}
+
+.filter-select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.filter-actions .button {
+    flex: 1;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.filter-actions .button:first-child {
+    background: #007bff;
+    color: white;
+}
+
+.filter-actions .button:last-child {
+    background: #6c757d;
+    color: white;
+}
+
+#filtersButton {
+    background: #6c757d;
+    color: white;
+    margin-left: 10px;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#filtersButton:hover {
+    background: #5a6268;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.9rem;  /* Make text slightly smaller */
+}
+
+.history-table th,
+.history-table td {
+    padding: 0.5rem;  /* Reduce padding */
+    border-bottom: 1px solid #dee2e6;
+    text-align: left;
+    white-space: nowrap;  /* Prevent wrapping */
+}
+
+.history-table td:nth-child(3),
+.history-table td:nth-child(4) {
+    max-width: 200px;  /* Limit width of value columns */
+    white-space: normal;  /* Allow wrapping for values */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.history-content {
+    max-height: 70vh;  /* Limit modal height */
+    overflow-y: auto;  /* Enable scrolling */
+}
+
+#historyTitle {
+    position: sticky;  /* Keep title visible while scrolling */
+    top: 0;
+    background: white;
+    padding: 0.5rem 0;
+    margin: 0 0 0.5rem 0;
+    border-bottom: 2px solid #dee2e6;
+    color: #495057;
+    z-index: 1;
+}
+
+.active-filters {
+    background: #e9ecef;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+    color: #495057;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.button.clear-filters {
+    background-color: #6c757d;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+    margin-left: 1rem;
+}
+
+.button.clear-filters:hover {
+    background-color: #5a6268;
+}
+
+#activeFiltersText {
+    flex: 1;
+}
+
+.ldap-result {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 0.5rem;
+}
+
+.actions-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.progress-bar-container {
+    margin: 1rem 0;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 20px;
+    background-color: #28a745;
+    width: 0;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    text-align: center;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.search-results {
+    margin-top: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* ...existing code... */
+
+/* Update form group styles for LDAP search modal */
+.search-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.search-form .form-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.search-form .form-group input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.search-form .form-group input[type="text"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* ...rest of existing code... */
+
+/* LDAP Search Modal specific styles */
+.ldapSearchModal .form-group {
+    margin-bottom: 1rem;
+}
+
+.ldapSearchModal .form-group:first-child {
+    margin-bottom: 1.5rem;  /* More space after search input */
+}
+
+.search-form .form-group label {
+    display: inline-flex;  /* Changed from flex to inline-flex */
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: normal;
+    cursor: pointer;
+    width: 100%;  /* Added to ensure full width */
+    padding: 0.25rem 0;  /* Added padding */
+}
+
+.search-form .form-group input[type="checkbox"] {
+    margin: 0;
+    width: auto;  /* Override any general input width styles */
+    cursor: pointer;
+    vertical-align: middle;  /* Ensure vertical alignment */
+}
+
+.search-form .form-group input[type="text"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-top: 0.25rem;  /* Space between label and input */
+}
+
+/* Checkbox container specific styles */
+.search-form .form-group .checkbox-label {
+    padding: 0.5rem 0;
+    user-select: none;  /* Prevent text selection */
+}
+
+/* Ensure consistent spacing */
+.search-form .actions-bar {
+    margin-top: 1.5rem;
+}
+
+/* ...existing code... */
+
+.historical-results {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 2px solid #dee2e6;
+}
+
+.historical-results h3 {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.historical-results .info-text {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.contacts-table.historical {
+    opacity: 0.9;
+    margin-bottom: 6rem; /* Added same margin for historical table */
+}
+
+.contact-row.historical {
+    background-color: #f8f9fa;
+}
+
+.contact-row.historical:hover {
+    background-color: #e9ecef;
+}
+
+/* ...rest of existing code... */
+
+/* ...existing code... */
+
+.page-size-select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.page-size-select:hover {
+    border-color: #aaa;
+}
+
+/* ...existing code... */
+
+.page-size-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 1rem;
+}
+
+.page-size-control label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.page-size-select {
+    padding: 0.3rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.page-size-select:hover {
+    border-color: #999;
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.button.export {
+    background: #28a745;
+    color: white;
+    margin-left: 10px;
+}
+
+.button.export:hover {
+    background: #218838;
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.button.export {
+    background: #28a745;
+    color: white;
+    white-space: nowrap;
+}
+
+.button.export:hover {
+    background: #218838;
+}
+
+/* ...existing code... */
+
+.action-buttons {
+    padding: 1rem 0;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.button.export {
+    background: #28a745;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.button.export:hover {
+    background: #218838;
+}
+
+.import-group {
+    display: inline-flex;  /* Change from just flex to inline-flex */
+    gap: 0.5rem;
+    align-items: center;
+    height: 100%;  /* Added to match container height */
+}
+
+.button.help {
+    padding: 0.5rem;
+    background: #17a2b8;
+    color: white;
+    display: inline-flex;  /* Change from flex to inline-flex */
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    height: 100%;  /* Match export button height */
+}
+
+.button.help:hover {
+    background: #138496;
+}
+
+.button.import {
+    height: 100%;  /* Match export button height */
+    padding: 0.75rem 1.5rem;  /* Match export button padding */
+    font-size: 1rem;  /* Match export button font size */
+}
+
+/* ...rest of existing code... */
+
+/* ...existing code... */
+
+.help-text {
+    color: #666;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+textarea.form-control {
+    width: 100%;
+    min-height: 120px;
+    font-family: monospace;
+}
+
+/* ...rest of existing code... */
+
+.email-preview {
+    background: #f8f9fa;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+}
+
+.email-preview h4 {
+    margin-top: 0;
+    color: #495057;
+}
+
+.preview-box {
+    background: white;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+}
+
+.preview-box pre {
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: inherit;
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.form-actions {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.button.save-settings {
+    background: #28a745;
+    color: white;
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.button.save-settings:hover {
+    background: #218838;
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.settings-header h2 {
+    margin: 0;
+    color: #495057;
+}
+
+.settings-header .save-settings {
+    background: #28a745;
+    color: white;
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.settings-header .save-settings:hover {
+    background: #218838;
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.action-button {
+    background: #6c757d;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.action-button:hover {
+    background: #5a6268;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #fff;
+    min-width: 160px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    z-index: 1000;
+}
+
+.dropdown-content.show {
+    display: block;
+}
+
+.dropdown-content a {
+    color: #212529;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    display: block;
+    white-space: nowrap;
+}
+
+.dropdown-content a:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-content a.text-danger {
+    color: #dc3545;
+}
+
+.dropdown-content a.text-danger:hover {
+    background-color: #fbe7e9;
+}
+
+/* ...existing code... */
+
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.preview-table th,
+.preview-table td {
+    padding: 0.5rem;
+    border: 1px solid #dee2e6;
+    text-align: left;
+}
+
+.preview-table th {
+    background: #f8f9fa;
+}
+
+.preview-table td.match {
+    color: #28a745;
+}
+
+.preview-table td.no-match {
+    color: #dc3545;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.button.import {
+    background: #28a745;
+    color: white;
+    margin-left: 10px;
+}
+
+.button.import:hover {
+    background: #218838;
+}
+
+/* ...existing code... */
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    display: none;
+    min-width: 160px;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    padding: 0.5rem 0;
+    margin: 0.125rem 0 0;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-menu.dropup {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 0.125rem;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 0.5rem 1rem;
+    clear: both;
+    font-weight: 400;
+    color: #212529;
+    text-decoration: none;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+}
+
+.dropdown-menu a:hover {
+    background-color: #f8f9fa;
+    color: #16181b;
+}
+
+/* ...rest of existing code... */
+
+// ...existing code...
+
+/* Add styles for import help button and modal */
+.import-group {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: center;
+    height: 100%;  /* Added to match container height */
+}
+
+.button.help {
+    padding: 0.5rem;
+    background: #17a2b8;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    height: 100%;  /* Match export button height */
+}
+
+.button.help:hover {
+    background: #138496;
+}
+
+.code-example {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+    font-family: monospace;
+}
+
+.code-example pre {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.import-help-content {
+    padding: 1rem 0;
+}
+
+.import-help-content h3 {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.import-help-content h4 {
+    color: #495057;
+    margin: 1.5rem 0 0.5rem;
+}
+
+.import-help-content ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.import-help-content .notes {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #fff3cd;
+    border-radius: 4px;
+}
+
+.import-help-content .notes ul {
+    margin: 0.5rem 0 0;
+}
+
+// ...rest of existing code...
+
+/* Update modal styles for import preview */
+#importPreviewModal .modal-content {
+    max-width: 1600px;
+    width: 95%;
+}
+
+#importPreviewModal .table-container {
+    overflow-x: auto;
+    margin: 1rem -20px;  /* Negative margin to counter modal padding */
+    padding: 0 20px;     /* Add padding back to the scrollable area */
+}
+
+#importPreviewModal .preview-table {
+    min-width: 1300px;  /* Ensure table doesn't shrink too much */
+}
+
+#importPreviewModal .preview-table th,
+#importPreviewModal .preview-table td {
+    white-space: nowrap;  /* Prevent text wrapping */
+    padding: 0.75rem 1rem;
+}
+
+#importSummary {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+// ...rest of existing code...
+
+/* Update all modal content sizes */
+.modal-content {
+    max-width: 1400px;
+    width: 95%;
+    margin: 1% auto;
+}
+
+/* Make sure tables in modals can scroll horizontally */
+.modal .table-container {
+    overflow-x: auto;
+    margin: 1rem -20px;
+    padding: 0 20px;
+    width: 100%;
+}
+
+/* Ensure all modal tables have consistent width */
+.modal .preview-table,
+.modal .history-table,
+.modal .contacts-table {
+    min-width: 1300px;
+}
+
+/* Make sure modal content is readable */
+.modal th,
+.modal td {
+    padding: 0.75rem 1rem;
+    white-space: nowrap;
+}
+
+/* Increase modal height */
+.modal .modal-content {
+    max-height: 95vh;  /* Increase from 90vh */
+}
+
+// ...rest of existing code...
+
+/* ...existing code... */
+
+.settings-layout {
+    display: flex;
+    flex-direction: column;  /* Changed to column to handle header properly */
+    min-height: 100vh;
+    width: 100%;
+}
+
+.settings-nav {
+    position: fixed;
+    left: 0;
+    top: 64px;  /* Height of the header */
+    width: 250px;
+    height: calc(100vh - 64px);
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.settings-content {
+    margin-left: 250px;  /* Width of nav */
+    padding: 2rem;
+    min-height: calc(100vh - 64px);  /* Full height minus header */
+    background: white;
+    flex-grow: 1;
+}
+
+/* Remove any top margins that might create gaps */
+.settings-header {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+/* Ensure proper spacing in content area */
+.setting-item {
+    margin-bottom: 1.5rem;
+}
+
+/* ...existing code... */
+
+.settings-nav {
+    width: 250px; /* Slightly wider */
+    flex-shrink: 0;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 1rem; /* Reduce top spacing */
+    height: fit-content;
+    margin-top: 1rem; /* Add small top margin */
+}
+
+.settings-nav h3 {
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f0f0f0;
+    color: #495057;
+    font-size: 1.2rem;
+}
+
+.settings-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.settings-nav li {
+    margin-bottom: 0.5rem;
+}
+
+.settings-nav a {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: #495057;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+}
+
+.settings-nav a:hover {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.settings-nav a.active {
+    background: #007bff;
+    color: white;
+    border-color: #0056b3;
+}
+
+.settings-content {
+    flex-grow: 1;
+    background: white;
+    padding: 2rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 1rem 0; /* Add vertical margin */
+    align-self: flex-start;
+    min-height: calc(100vh - 80px); /* Minimum height */
+}
+
+.settings-welcome {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.settings-content .action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+    align-items: center;
+}
+
+.settings-content .import-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* ...rest of existing code... */
+
+/* ...existing code... */
+
+.settings-nav a[href*="data_management"] {
+    text-transform: none;  /* Prevent automatic capitalization */
+}
+
+.settings-content .action-buttons {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.settings-content .import-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.button.export,
+.button.import {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.button.help {
+    padding: 0.5rem;
+    min-width: 32px;
+    height: 32px;
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.settings-layout {
+    display: flex;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+    min-height: calc(100vh - 64px);
+    position: relative;
+}
+
+.settings-nav {
+    width: 250px;
+    flex-shrink: 0;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 1rem;
+    height: fit-content;
+    z-index: 100;
+}
+
+.settings-content {
+    flex: 1;
+    background: white;
+    padding: 2rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    min-height: calc(100vh - 96px);
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.notifications-btn {
+    position: relative;
+    background: none;
+    border: none;
+    color: white;
+    padding: 0.5rem;
+    margin-right: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notifications-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+}
+
+.notifications-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 0.25rem;
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #333;
+    display: none;  /* Hidden by default, shown when there are notifications */
+}
+
+.notifications-modal {
+    max-width: 500px !important;
+}
+
+.notifications-list {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-item.unread {
+    background-color: #e8f4fd;
+}
+
+.notification-item.unread:hover {
+    background-color: #d9ebfa;
+}
+
+.notification-content h4 {
+    margin: 0 0 0.5rem 0;
+    color: #495057;
+    font-size: 1rem;
+}
+
+.notification-content p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.notification-time {
+    display: block;
+    font-size: 0.8rem;
+    color: #adb5bd;
+    margin-top: 0.5rem;
+}
+
+.notification-empty {
+    padding: 2rem;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* ...existing code... */
+
+// ...existing code...
+
+/* Debug Menu Styles */
+.debug-menu {
+    position: relative;
+    margin-left: 1rem;
+}
+
+.button.debug {
+    background: #6c757d;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.button.debug:hover {
+    background: #5a6268;
+}
+
+.debug-menu .dropdown-content {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    min-width: 160px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    display: none;
+    z-index: 1000;
+}
+
+.debug-menu .dropdown-content a {
+    color: #212529;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    display: block;
+    white-space: nowrap;
+}
+
+.debug-menu .dropdown-content a:hover {
+    background-color: #f8f9fa;
+}
+
+// ...existing code...
+
+/* ...existing code... */
+
+.button.create {
+    background: #28a745;
+    color: white;
+    padding: 0.5rem 1rem;
+    margin-left: 1rem;
+}
+
+.button.create:hover {
+    background: #218838;
+}
+
+/* Add to your existing modal styles */
+#newContactModal .modal-content {
+    max-width: 600px;
+}
+
+#newContactModal .form-group textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* ...rest of existing code... */
+
+/* ...existing code... */
+
+.dropdown-content a.permanent-delete {
+    color: #dc3545;
+    font-weight: bold;
+    border-top: 1px solid #dee2e6;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+}
+
+.dropdown-content a.permanent-delete:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.has-conflict {
+    background-color: #fff3cd !important;  /* Light yellow background */
+}
+
+.conflict-indicator {
+    color: #856404;
+    margin-right: 0.5rem;
+    cursor: help;
+}
+
+/* ...existing code... */
+
+// ...existing code...
+
+.mac-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.button.phone-info {
+    padding: 0.25rem;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.button.phone-info:hover {
+    background: #5a6268;
+}
+
+.phone-details {
+    padding: 1rem;
+}
+
+.phone-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.info-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-group label {
+    font-weight: bold;
+    color: #495057;
+}
+
+.status-registered {
+    color: #28a745;
+}
+
+.status-not-registered {
+    color: #dc3545;
+}
+
+// ...existing code...
+
+/* CUCM Settings Styles */
+.cucm-info {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #17a2b8;
+    border-radius: 4px;
+}
+
+.cucm-info p {
+    margin: 0.5rem 0;
+    color: #495057;
+    font-size: 0.95rem;
+}
+
+.cucm-info p:first-child {
+    font-weight: 500;
+}
+
+/* Update settings nav to handle CUCM text */
+.settings-nav a[href*="cucm"] {
+    text-transform: none;  /* Prevent automatic capitalization */
+}
+
+/* ...existing code... */
+
+/* CUCM Test Button Styles */
+.cucm-test {
+    margin: 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.cucm-test .test-connection {
+    background: #6c757d;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cucm-test .test-connection:hover {
+    background: #5a6268;
+}
+
+.cucm-test .connection-status {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.cucm-test .connection-status.testing {
+    background-color: #ffeeba;
+    color: #856404;
+}
+
+.cucm-test .connection-status.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.cucm-test .connection-status.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* ...existing code... */
+
+// ...existing code...
+
+/* CUCM Test Modal Styles */
+#cucmTestModal .modal-body {
+    padding: 2rem;
+    text-align: center;
+}
+
+#cucmTestModal .loading {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+#cucmTestModal .success,
+#cucmTestModal .error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+#cucmTestModal .success p {
+    color: #28a745;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+#cucmTestModal .error p {
+    color: #dc3545;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+#cucmTestModal svg {
+    margin-bottom: 1rem;
+}
+
+// ...existing code...
+
+// ...existing code...
+
+/* Make sure these modal styles are not being overridden */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 1% auto;
+    padding: 20px;
+    width: 95%;
+    max-width: 1600px;
+    border-radius: 4px;
+    position: relative;
+    max-height: 95vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.modal.active {
+    display: block;
+}
+
+// ...existing code...
