@@ -1,4 +1,5 @@
-from ldap3 import Server, Connection, SUBTREE, ALL_ATTRIBUTES, ALL, LEVEL, MODIFY_REPLACE
+from ldap3 import Server, Connection, SUBTREE, ALL_ATTRIBUTES, ALL, LEVEL, MODIFY_REPLACE, Tls, SIMPLE, AUTO_BIND_NO_TLS, AUTO_BIND_TLS_BEFORE_BIND
+import ssl
 from models import db, Contact, Settings, Notification  # Add Notification to imports
 from datetime import datetime
 from config import Config
@@ -12,16 +13,72 @@ class LDAPSync:
             self.contact_id = contact_id
             super().__init__(f"UID conflict detected with existing contact: {uid}")
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, server=None, port=None, bind_dn=None, bind_password=None, base_dn=None, use_ssl=None, allow_anonymous=None):
+        # Setup logging first so we can use it during initialization
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger('LDAPSync')
+        
         # Get fresh config instance to ensure latest settings
         if config is None:
             config = Config()
         
-        self.ldap_server = config.LDAP_SERVER
-        self.base_dn = config.LDAP_BASE_DN
-        self.user_dn = config.LDAP_USER_DN
-        self.password = config.LDAP_PASSWORD
-        self.use_anonymous = config.LDAP_USE_ANONYMOUS
+        # Allow parameter override or use config/settings
+        self.ldap_server = server or Settings.get_value('LDAP_SERVER', '')
+        self.base_dn = base_dn or Settings.get_value('LDAP_BASE_DN', '')
+        
+        # Get bind credentials - explicitly check for None to handle empty strings properly
+        # First try parameters, then settings
+        if bind_dn is not None:
+            self.user_dn = bind_dn
+        else:
+            self.user_dn = Settings.get_value('LDAP_BIND_DN', '')
+            
+        if bind_password is not None:
+            self.password = bind_password
+        else:
+            self.password = Settings.get_value('LDAP_BIND_PASSWORD', '')
+        
+        # Strip any leading/trailing whitespace from credentials
+        if self.user_dn:
+            self.user_dn = self.user_dn.strip()
+        if self.password:
+            self.password = self.password.strip()
+            
+        # Check if anonymous binding is allowed - default to False for security
+        if allow_anonymous is not None:
+            self.allow_anonymous = allow_anonymous
+        else:
+            self.allow_anonymous = Settings.get_value('LDAP_ALLOW_ANONYMOUS', 'False').lower() == 'true'
+            
+        self.logger.info(f"LDAP credentials - bind DN provided: {'Yes' if self.user_dn else 'No'}, password provided: {'Yes' if self.password else 'No'}")
+        self.logger.info(f"Anonymous binding allowed: {self.allow_anonymous}")
+        
+        # Force the use of credentials when both bind_dn and password are provided
+        if self.user_dn and self.password:
+            self.use_anonymous = False
+            self.logger.info("Will use authenticated binding with provided credentials")
+        else:
+            # Only use anonymous if allowed and credentials are missing
+            self.use_anonymous = self.allow_anonymous
+            if self.use_anonymous:
+                self.logger.info("Will use anonymous binding (no complete credentials provided)")
+            else:
+                self.logger.error("Cannot use anonymous binding (disabled) and credentials are incomplete")
+                missing = []
+                if not self.user_dn:
+                    missing.append("bind_dn")
+                if not self.password:
+                    missing.append("bind_password")
+                raise ValueError(f"LDAP credentials incomplete: missing {', '.join(missing)}. Either provide complete credentials or enable anonymous binding.")
+
+        # Port parameter (needed for SSL)
+        self.port = port or int(Settings.get_value('LDAP_PORT', '389'))
+        
+        # Initialize use_ssl parameter
+        if use_ssl is not None:
+            self.use_ssl = use_ssl
+        else:
+            self.use_ssl = Settings.get_value('LDAP_USE_SSL', 'False').lower() == 'true'
         
         # Default to False if setting doesn't exist yet
         try:
@@ -30,7 +87,8 @@ class LDAPSync:
             self.exclude_students = False
             
         self.page_size = 100
-        self.max_entries = 100
+        # Update this limit to a much higher value or make it configurable
+        self.max_entries = 1000  # Increased from 100 to 1000
         
         # Build search filter based on settings
         base_filter = "(objectClass=person)"
@@ -38,22 +96,59 @@ class LDAPSync:
             self.search_filter = f"(&{base_filter}(!(eduPersonAffiliation=student)))"
         else:
             self.search_filter = base_filter
-        
-        # Setup logging
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger('LDAPSync')
 
     def connect(self):
-        self.logger.info(f"Connecting to LDAP server: {self.ldap_server}")
-        server = Server(self.ldap_server, get_info=ALL)
+        self.logger.info(f"Connecting to LDAP server: {self.ldap_server}, Port: {self.port}, SSL: {self.use_ssl}")
+        
+        if self.use_anonymous:
+            self.logger.info("Using anonymous binding (explicitly enabled)")
+        else:
+            # Log credentials being used (don't log actual password)
+            self.logger.info(f"Using authenticated binding with DN: '{self.user_dn}'")
+            if not self.password:
+                self.logger.warning("Password is empty but authenticated binding was requested")
         
         try:
             if self.use_anonymous:
-                self.logger.info("Using anonymous binding")
+                # Only use anonymous binding if explicitly allowed and credentials are missing
+                self.logger.info("Connecting with anonymous binding")
+                if self.use_ssl:
+                    # Create TLS configuration for anonymous binding with SSL
+                    tls = Tls(validate=ssl.CERT_NONE)
+                    server = Server(self.ldap_server, port=self.port, use_ssl=True, tls=tls)
+                else:
+                    server = Server(self.ldap_server, port=self.port, get_info=ALL)
                 conn = Connection(server, auto_bind=True)
             else:
-                self.logger.info(f"Binding with user: {self.user_dn}")
-                conn = Connection(server, self.user_dn, self.password, auto_bind=True)
+                # Validate credentials before attempting to connect
+                if not self.user_dn:
+                    self.logger.error("Missing LDAP bind_dn")
+                    raise ValueError("LDAP bind_dn is required for authentication")
+                    
+                if not self.password:
+                    self.logger.error("Missing LDAP bind_password")
+                    raise ValueError("LDAP bind_password is required for authentication")
+                
+                # Create server object with or without SSL
+                if self.use_ssl:
+                    # Create TLS configuration
+                    tls = Tls(validate=ssl.CERT_NONE)
+                    self.logger.info(f"Creating SSL server connection to {self.ldap_server}:{self.port}")
+                    server = Server(self.ldap_server, port=self.port, use_ssl=True, tls=tls, get_info=ALL)
+                else:
+                    self.logger.info(f"Creating non-SSL server connection to {self.ldap_server}:{self.port}")
+                    server = Server(self.ldap_server, port=self.port, get_info=ALL)
+                
+                # Attempt authenticated connection with proper credentials
+                self.logger.info("Attempting authenticated binding...")
+                conn = Connection(
+                    server,
+                    user=self.user_dn,
+                    password=self.password,
+                    authentication=SIMPLE,
+                    auto_bind=True
+                )
+                self.logger.info(f"Bind successful! Connection: {conn}")
             
             # Verify base DN exists
             if not self._verify_base_dn(conn):
@@ -63,6 +158,8 @@ class LDAPSync:
             return conn
         except Exception as e:
             self.logger.error(f"LDAP connection failed: {str(e)}")
+            # Add more detailed debugging info about the connection
+            self.logger.error(f"Connection details - Server: {self.ldap_server}, Port: {self.port}, SSL: {self.use_ssl}, Anonymous: {self.use_anonymous}")
             raise
 
     def _verify_base_dn(self, conn):
@@ -118,24 +215,47 @@ class LDAPSync:
 
             # Set paged search control with size limit and exclude students
             self.logger.info(f"Performing LDAP search with filter: {self.search_filter}")
-            search_result = conn.search(
-                search_base=base_dn,
-                search_filter=self.search_filter,
-                search_scope=SUBTREE,
-                attributes=['uid', 'cn', 'sn', 'givenName', 'mail', 'telephoneNumber', 
-                          'ou', 'eduPersonAffiliation'],
-                size_limit=self.max_entries
-            )
+            
+            # Use paged search to bypass server-side size limits
+            entries_list = []
+            cookie = None
+            
+            # Implement paged search
+            self.logger.info("Using paged search to retrieve all entries")
+            
+            while True:
+                # Use paged search control to retrieve entries in batches
+                search_result = conn.search(
+                    search_base=base_dn,
+                    search_filter=self.search_filter,
+                    search_scope=SUBTREE,
+                    attributes=['uid', 'cn', 'sn', 'givenName', 'mail', 'telephoneNumber', 
+                              'ou', 'eduPersonAffiliation'],
+                    paged_size=self.page_size,
+                    paged_cookie=cookie
+                )
+                
+                if not search_result:
+                    err_msg = conn.result.get('description', 'Unknown error')
+                    self.logger.warning(f"LDAP search returned no results: {err_msg}")
+                    break
+                    
+                entries_list.extend(conn.entries)
+                self.logger.info(f"Retrieved {len(conn.entries)} entries in this page, total so far: {len(entries_list)}")
+                
+                cookie = conn.result.get('controls', {}).get('1.2.840.113556.1.4.319', {}).get('value', {}).get('cookie')
+                if not cookie:
+                    # No more pages
+                    break
 
-            if not search_result:
-                raise Exception(f"LDAP search failed: {conn.result}")
-
-            self.logger.info(f"Found {len(conn.entries)} entries")
+            self.logger.info(f"Found {len(entries_list)} total entries")
             current_time = datetime.utcnow()
             
-            for entry in conn.entries:
-                if total_entries >= self.max_entries:
-                    break
+            # Process all entries
+            for entry in entries_list:
+                # Remove size limit check, we'll process all entries
+                # if total_entries >= self.max_entries:
+                #    break
 
                 self.logger.debug(f"Processing entry: {entry.entry_dn}")
                 entry_data = entry.entry_attributes_as_dict
@@ -354,20 +474,38 @@ class LDAPSync:
             self.logger.info(f"Searching with filter: {search_filter}")
             
             # Perform search with case-insensitive matching
-            result = conn.search(
-                search_base=self.base_dn,
-                search_filter=search_filter,
-                search_scope=SUBTREE,
-                attributes=['uid', 'cn', 'sn', 'givenName', 'mail']
-            )
+            # Update search to use paging for user searches too
+            entries_list = []
+            cookie = None
             
-            if not result:
+            while True:
+                result = conn.search(
+                    search_base=self.base_dn,
+                    search_filter=search_filter,
+                    search_scope=SUBTREE,
+                    attributes=['uid', 'cn', 'sn', 'givenName', 'mail'],
+                    paged_size=self.page_size,
+                    paged_cookie=cookie
+                )
+                
+                if not result:
+                    self.logger.warning(f"No results found in this page: {conn.result}")
+                    break
+                
+                entries_list.extend(conn.entries)
+                
+                cookie = conn.result.get('controls', {}).get('1.2.840.113556.1.4.319', {}).get('value', {}).get('cookie')
+                if not cookie:
+                    # No more pages
+                    break
+            
+            if len(entries_list) == 0:
                 self.logger.warning("No results found")
                 return []
             
             # Process and return results
             contacts = []
-            for entry in conn.entries:
+            for entry in entries_list:
                 contact = {
                     'dn': entry.entry_dn,
                     'name': entry.cn.value if hasattr(entry, 'cn') else '',

@@ -88,11 +88,35 @@ class Settings(db.Model):
     @staticmethod
     def get_default_cucm_settings():
         return [
-            ('CUCM_HOST', '', 'CUCM Server Host', 'string', 'cucm'),
+            ('CUCM_HOST', '10.1.20.12', 'CUCM Server Host', 'string', 'cucm'),
             ('CUCM_USERNAME', '', 'CUCM AXL Username', 'string', 'cucm'),
             ('CUCM_PASSWORD', '', 'CUCM AXL Password', 'string', 'cucm'),
-            ('CUCM_VERSION', '12.5', 'CUCM Version', 'string', 'cucm'),
+            ('CUCM_VERSION', '14.0.1', 'CUCM Version', 'string', 'cucm'),
             ('CUCM_VERIFY_CERT', 'False', 'Verify SSL Certificate', 'boolean', 'cucm')
+        ]
+
+    @staticmethod
+    def get_default_ldap_settings():
+        return [
+            # Connection settings
+            ('LDAP_SERVER', 'ldap.duth.gr', 'LDAP Server Address', 'string', 'ldap'),
+            ('LDAP_PORT', '389', 'LDAP Port', 'string', 'ldap'),
+            ('LDAP_USE_SSL', 'False', 'Use SSL/TLS for LDAP Connection', 'boolean', 'ldap'),
+            
+            # Authentication settings
+            ('LDAP_BIND_DN', '', 'LDAP Bind DN (Username)', 'string', 'ldap'),
+            ('LDAP_BIND_PASSWORD', '', 'LDAP Bind Password', 'string', 'ldap'),
+            ('LDAP_ALLOW_ANONYMOUS', 'True', 'Allow Anonymous Binding', 'boolean', 'ldap'),  # Changed default to 'True'
+            
+            # Directory search settings
+            ('LDAP_BASE_DN', '', 'LDAP Base DN for searches', 'string', 'ldap'),
+            ('LDAP_USER_FILTER', '(uid=*)', 'LDAP User Filter', 'string', 'ldap'),
+            
+            # Synchronization settings
+            ('LDAP_SYNC_ENABLED', 'False', 'Enable Automatic LDAP Sync', 'boolean', 'ldap'),
+            ('LDAP_SYNC_INTERVAL', '60', 'LDAP Sync Interval (minutes)', 'integer', 'ldap'),
+            ('LDAP_PAGE_SIZE', '100', 'LDAP Page Size', 'integer', 'ldap'),
+            ('LDAP_MAX_ENTRIES', '1000', 'Max LDAP Entries (0 for no limit)', 'integer', 'ldap'),
         ]
 
 class Notification(db.Model):

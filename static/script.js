@@ -1733,3 +1733,47 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.classList.remove('modal-open');
     };
 });
+
+function testLdapConnection() {
+    // Get LDAP settings from form
+    const server = document.getElementById('LDAP_SERVER').value;
+    const port = document.getElementById('LDAP_PORT').value;
+    const bindDn = document.getElementById('LDAP_BIND_DN').value;
+    const bindPassword = document.getElementById('LDAP_BIND_PASSWORD').value;
+    const baseDn = document.getElementById('LDAP_BASE_DN').value;
+    const useSSL = document.getElementById('LDAP_USE_SSL').checked;
+    
+    const statusElement = document.getElementById('ldapStatus');
+    statusElement.textContent = 'Testing...';
+    statusElement.className = 'connection-status testing';
+    
+    fetch('/test-ldap-connection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            server: server,
+            port: port,
+            bind_dn: bindDn,
+            bind_password: bindPassword,
+            base_dn: baseDn,
+            use_ssl: useSSL
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusElement.textContent = 'Connected successfully!';
+            statusElement.className = 'connection-status success';
+        } else {
+            statusElement.textContent = 'Connection failed: ' + data.error;
+            statusElement.className = 'connection-status error';
+        }
+    })
+    .catch(error => {
+        statusElement.textContent = 'Request error: ' + error;
+        statusElement.className = 'connection-status error';
+    });
+}

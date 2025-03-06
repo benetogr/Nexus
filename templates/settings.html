@@ -6,13 +6,11 @@
     <div class="settings-nav">
         <h3>Settings</h3>
         <ul>
-            {% for category in settings_by_category.keys() %}
+            {% for category in settings_by_category %}
             <li>
                 <a href="{{ url_for('settings', category=category) }}" 
-                   class="{% if active_category == category %}active{% endif %}">
-                    {% if category == 'data_management' %}Data Management
-                    {% elif category == 'cucm' %}CUCM Settings
-                    {% else %}{{ category.title() }}{% endif %}
+                   class="{% if category == active_category %}active{% endif %}">
+                    {{ category.replace('_', ' ').title() }}
                 </a>
             </li>
             {% endfor %}
@@ -22,119 +20,67 @@
     <!-- Settings Content -->
     <div class="settings-content">
         {% if active_category %}
-        <div class="settings-header">
-            <h2>
-                {% if active_category == 'data_management' %}
-                    Data Management Settings
-                {% elif active_category == 'cucm' %}
-                    CUCM Integration Settings
-                {% else %}
-                    {{ active_category.title() }} Settings
-                {% endif %}
-            </h2>
-        </div>
-        
-        <form id="settingsForm" method="POST" action="{{ url_for('save_settings', category=active_category) }}">
+        <form method="post" action="{{ url_for('save_settings', category=active_category) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <h2>{{ active_category.replace('_', ' ').title() }} Settings</h2>
             
             {% if active_category == 'ldap' %}
-            <div class="ldap-test">
-                <button type="button" id="testLdapButton" class="test-connection" onclick="testLdapConnection(); return false;">
-                    Test LDAP Connection
-                </button>
-                <span id="ldapStatus" class="connection-status"></span>
+            <div class="settings-info-box">
+                <p>Configure connection settings to your LDAP directory server. Authenticated binding is recommended for best results.</p>
             </div>
             {% endif %}
-
-            {% if active_category == 'cucm' %}
-            <div class="cucm-info">
-                <p>Configure Cisco Unified Communications Manager (CUCM) integration settings.</p>
-                <p>These settings are used for phone lookups and status checks.</p>
-                <div class="cucm-test">
-                    <button type="button" id="testCucmButton" class="test-connection">
-                        Test CUCM Connection
-                    </button>
-                </div>
-            </div>
-            {% endif %}
-
+            
             {% for setting in settings_by_category[active_category] %}
             <div class="setting-item">
-                <label for="{{ setting.key }}">{{ setting.description }}</label>
-                {% if setting.type == 'boolean' %}
-                    <input type="checkbox" name="{{ setting.key }}" id="{{ setting.key }}" value="True"
-                           {% if setting.value == 'True' %}checked{% endif %}>
-                {% elif setting.type == 'text' %}
-                    <textarea name="{{ setting.key }}" id="{{ setting.key }}" 
-                              class="form-control" rows="6">{{ setting.value }}</textarea>
-                {% else %}
-                    <input type="{{ 'password' if 'password' in setting.key.lower() else 'text' }}"
-                           name="{{ setting.key }}" id="{{ setting.key }}"
-                           value="{{ setting.value }}" class="form-control">
-                    {% if setting.key == 'CUCM_VERSION' %}
-                    <small class="help-text">
-                        Enter only major.minor.patch (e.g., 14.0.1 from "System version: 14.0.1.13900-155")<br>
-                        To find your version: Login to CUCM Admin -> Help -> About<br>
-                        Or via SSH: run 'show version active'
-                    </small>
+                <label for="{{ setting.key }}">
+                    {{ setting.description }}
+                    {% if setting.key in ['LDAP_PAGE_SIZE', 'LDAP_MAX_ENTRIES'] %}
+                    <span class="help-text">Use 0 for no limit</span>
                     {% endif %}
+                </label>
+                
+                <!-- Different input types based on setting type -->
+                {% if setting.type == 'boolean' %}
+                <div class="checkbox-container">
+                    <input type="checkbox" name="{{ setting.key }}" id="{{ setting.key }}"
+                        {% if setting.value.lower() == 'true' %}checked{% endif %}>
+                </div>
+                {% elif setting.key == 'LDAP_BIND_PASSWORD' %}
+                <input type="password" name="{{ setting.key }}" id="{{ setting.key }}" value="{{ setting.value }}">
+                {% else %}
+                <input type="{{ 'password' if 'password' in setting.key.lower() else 'text' }}" name="{{ setting.key }}" id="{{ setting.key }}" value="{{ setting.value }}">
                 {% endif %}
             </div>
             {% endfor %}
-
-            {% if active_category == 'data_management' %}
-            <div class="action-buttons">
-                <button type="button" onclick="window.location.href='{{ url_for('export_csv') }}'" class="button export">
-                    Export Contacts to CSV
+            
+            <!-- Test connection button for LDAP settings -->
+            {% if active_category == 'ldap' %}
+            <div class="ldap-test">
+                <button type="button" onclick="testLdapConnection()" class="button test-connection">
+                    <i class="fas fa-plug"></i> Test Connection
                 </button>
-                <div class="import-group">
-                    <button type="button" onclick="document.getElementById('importCsv').click()" class="button import">
-                        Import CSV
-                    </button>
-                    <button type="button" onclick="showImportHelp()" class="button help" title="Import Format Help">
-                        <svg viewBox="0 0 24 24" width="16" height="16">
-                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
-                        </svg>
-                    </button>
-                    <input type="file" id="importCsv" accept=".csv" style="display: none;" onchange="handleCsvImport(this)">
-                </div>
-            </div>
-            {% if conflicts %}
-            <div class="conflicts-section">
-                <h3>UID Conflicts</h3>
-                <p>The following contacts have conflicting UIDs between manual entries and LDAP:</p>
-                <div class="conflicts-list">
-                    {% for contact in conflicts %}
-                    <div class="conflict-item" data-id="{{ contact.id }}">
-                        <div class="conflict-details">
-                            <h4>{{ contact.full_name }} ({{ contact.uid }})</h4>
-                            <p>Manual entry conflicts with LDAP entry</p>
-                        </div>
-                        <div class="conflict-actions">
-                            <button onclick="resolveConflict({{ contact.id }}, 'keep_manual')" class="button">
-                                Keep Manual Entry
-                            </button>
-                            <button onclick="resolveConflict({{ contact.id }}, 'use_ldap')" class="button">
-                                Use LDAP Data
-                            </button>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
+                <div id="ldapStatus" class="connection-status"></div>
             </div>
             {% endif %}
+            
+            <!-- Test connection button for CUCM settings -->
+            {% if active_category == 'cucm' %}
+            <div class="cucm-test">
+                <button type="button" id="testCucmBtn" class="button test-connection">
+                    <i class="fas fa-phone"></i> Test CUCM Connection
+                </button>
+                <div id="cucmStatus" class="connection-status"></div>
+            </div>
             {% endif %}
-
+            
             <div class="form-actions">
-                <button type="submit" class="button save-settings">
-                    Save {% if active_category == 'data_management' %}Data Management{% else %}{{ active_category.title() }}{% endif %} Settings
-                </button>
+                <button type="submit" class="button save-settings">Save {{ active_category.title() }} Settings</button>
             </div>
         </form>
         {% else %}
         <div class="settings-welcome">
-            <h2>Application Settings</h2>
-            <p>Select a category from the side menu to configure settings.</p>
+            <h2>Settings</h2>
+            <p>Select a category from the sidebar to configure application settings.</p>
         </div>
         {% endif %}
     </div>
@@ -289,6 +235,7 @@ function testLdapConnection() {
     const bindDn = document.getElementById('LDAP_BIND_DN').value;
     const bindPassword = document.getElementById('LDAP_BIND_PASSWORD').value;
     const baseDn = document.getElementById('LDAP_BASE_DN').value;
+    const useSSL = document.getElementById('LDAP_USE_SSL').checked;
     
     const statusElement = document.getElementById('ldapStatus');
     statusElement.textContent = 'Testing...';
@@ -304,7 +251,8 @@ function testLdapConnection() {
             port: port,
             bind_dn: bindDn,
             bind_password: bindPassword,
-            base_dn: baseDn
+            base_dn: baseDn,
+            use_ssl: useSSL
         })
     })
     .then(response => response.json())
@@ -442,5 +390,32 @@ function testCucmConnection() {
         `;
     });
 }
+
+// Add event handler to update port when SSL checkbox changes
+function updateLdapPort(checkbox) {
+    const portInput = document.getElementById('LDAP_PORT');
+    const currentPort = portInput.value.trim();
+    
+    if (checkbox.checked) {
+        // If SSL is checked and port is the default 389, change to 636
+        if (currentPort === '389') {
+            portInput.value = '636';
+        }
+    } else {
+        // If SSL is unchecked and port is 636, change to 389
+        if (currentPort === '636') {
+            portInput.value = '389';
+        }
+    }
+}
+
+// Initialize port based on SSL setting when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const sslCheckbox = document.getElementById('LDAP_USE_SSL');
+    if (sslCheckbox) {
+        // Apply port update on initial page load
+        updateLdapPort(sslCheckbox);
+    }
+});
 </script>
 {% endblock %}

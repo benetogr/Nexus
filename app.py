@@ -61,38 +61,35 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def init_settings():
-    default_settings = [
-        # LDAP settings
-        ('LDAP_SERVER', 'ldap://ldap.duth.gr:389', 'LDAP Server URL', 'string', 'ldap'),
-        ('LDAP_BASE_DN', 'dc=duth,dc=gr', 'LDAP Base DN', 'string', 'ldap'),
-        ('LDAP_USER_DN', '', 'LDAP User DN', 'string', 'ldap'),
-        ('LDAP_PASSWORD', '', 'LDAP Password', 'string', 'ldap'),
-        ('LDAP_USE_ANONYMOUS', 'False', 'Use Anonymous LDAP Binding', 'boolean', 'ldap'),
-        ('LDAP_EXCLUDE_STUDENTS', 'False', 'Exclude Students from LDAP Sync', 'boolean', 'ldap'),
-        # CUCM Settings (add these)
-        ('CUCM_HOST', '', 'CUCM Server Host', 'string', 'cucm'),
-        ('CUCM_USERNAME', '', 'CUCM AXL Username', 'string', 'cucm'),
-        ('CUCM_PASSWORD', '', 'CUCM AXL Password', 'string', 'cucm'),
-        ('CUCM_VERSION', '14.0.1', 'CUCM Version', 'string', 'cucm'),
-        ('CUCM_VERIFY_CERT', 'False', 'Verify SSL Certificate', 'boolean', 'cucm'),
-        # Sync settings
-        ('SYNC_INTERVAL', '24', 'Sync Interval (hours)', 'integer', 'sync'),
-        ('RETENTION_PERIOD', '30', 'Contact Retention Period (days)', 'integer', 'sync'),
-        # SMTP Settings
+    """Initialize default settings in the database"""
+    default_settings = []
+    
+    # Use the model methods to get default settings
+    default_settings.extend(Settings.get_default_ldap_settings())
+    default_settings.extend(Settings.get_default_cucm_settings())
+    
+    # Email settings
+    email_settings = [
         ('SMTP_SERVER', '', 'SMTP Server', 'string', 'email'),
         ('SMTP_PORT', '587', 'SMTP Port', 'integer', 'email'),
         ('SMTP_USERNAME', '', 'SMTP Username', 'string', 'email'),
         ('SMTP_PASSWORD', '', 'SMTP Password', 'string', 'email'),
         ('SMTP_USE_TLS', 'True', 'Use TLS', 'boolean', 'email'),
         ('MAIL_FROM', '', 'From Email Address', 'string', 'email'),
-        # Data Management settings
+    ]
+    default_settings.extend(email_settings)
+    
+    # Data Management settings
+    data_settings = [
         ('IMPORT_BATCH_SIZE', '100', 'Import Batch Size', 'integer', 'data_management'),
         ('EXPORT_INCLUDE_HISTORY', 'False', 'Include History in Exports', 'boolean', 'data_management'),
         ('CSV_DELIMITER', ',', 'CSV Delimiter', 'string', 'data_management'),
         ('EXPORT_DATE_FORMAT', '%Y-%m-%d %H:%M', 'Export Date Format', 'string', 'data_management'),
         ('CSV_ENCODING', 'utf-8-sig', 'CSV File Encoding', 'string', 'data_management')
     ]
+    default_settings.extend(data_settings)
     
+    # Add all settings if they don't exist
     for key, value, description, type_, category in default_settings:
         if not Settings.query.filter_by(key=key).first():
             setting = Settings(
@@ -133,12 +130,21 @@ def create_app():
         # Initialize scheduler for automatic LDAP sync
         scheduler = BackgroundScheduler()
         sync_interval = config.SYNC_INTERVAL  # Use config instance
-        scheduler.add_job(
-            func=LDAPSync(config).sync_contacts,  # Pass config to LDAPSync
-            trigger="interval", 
-            hours=int(sync_interval)
-        )
-        scheduler.start()
+        
+        # Don't automatically start LDAP sync if settings are incomplete
+        try:
+            ldap_sync = LDAPSync(config)
+            scheduler.add_job(
+                func=ldap_sync.sync_contacts,
+                trigger="interval", 
+                hours=int(sync_interval)
+            )
+            scheduler.start()
+        except ValueError as e:
+            print(f"Warning: LDAP synchronization not enabled - {str(e)}")
+            print("You can configure LDAP settings in the web interface.")
+        except Exception as e:
+            print(f"Error initializing LDAP sync: {str(e)}")
     
     return app
 
@@ -399,9 +405,35 @@ def sync():
             'error': error_msg
         })
 
-@app.route('/settings')
-@app.route('/settings/<category>')
+@app.route('/settings', methods=['GET'])
+@app.route('/settings/<category>', methods=['GET'])
 def settings(category=None):
+    # Ensure default settings exist in database
+    default_settings = []
+    
+    # Collect all default settings
+    for setting_group in [
+        Settings.get_default_ldap_settings(),
+        Settings.get_default_cucm_settings(),
+        # Add other default settings here
+    ]:
+        default_settings.extend(setting_group)
+    
+    # Check each default setting and add if missing
+    for key, value, description, type_name, category_name in default_settings:
+        if not Settings.query.filter_by(key=key).first():
+            new_setting = Settings(
+                key=key,
+                value=value,
+                description=description,
+                type=type_name,
+                category=category_name
+            )
+            db.session.add(new_setting)
+    
+    # Commit any added settings
+    db.session.commit()
+    
     settings = Settings.query.all()
     settings_by_category = {}
     for setting in settings:
@@ -446,11 +478,30 @@ def restart_required():
 def test_ldap():
     print("Testing LDAP connection...")
     try:
-        # Create LDAP connection using current settings
-        ldap_sync = LDAPSync()
+        # Get data from request if it's a POST with JSON data
+        data = request.get_json()
+        
+        # Create LDAP sync instance, handling both cases:
+        # 1. With provided parameters
+        # 2. Using default settings from config
+        if data:
+            # Explicitly pass all available parameters
+            ldap_sync = LDAPSync(
+                server=data.get('server'),
+                port=data.get('port'),
+                bind_dn=data.get('bind_dn'),
+                bind_password=data.get('bind_password'),
+                base_dn=data.get('base_dn'),
+                use_ssl=data.get('use_ssl', False),
+                allow_anonymous=data.get('allow_anonymous', False)
+            )
+        else:
+            # Use default settings from config
+            ldap_sync = LDAPSync()
+            
+        # Try a simple search to verify connection works
         conn = ldap_sync.connect()
         
-        # Try a simple search to verify connection works
         result = conn.search(
             search_base=ldap_sync.base_dn,
             search_filter='(objectClass=*)',
@@ -460,7 +511,7 @@ def test_ldap():
         conn.unbind()
         return jsonify({
             'success': True, 
-            'message': 'LDAP connection successful'
+            'message': 'LDAP connection successful' + (' (anonymous binding)' if ldap_sync.use_anonymous else '')
         })
     except Exception as e:
         return jsonify({
@@ -1184,10 +1235,139 @@ def debug_drop_all_contacts():
             'error': str(e)
         }), 500
 
+@app.route('/test-ldap-connection', methods=['POST'])
+def test_ldap_connection():
+    """Test LDAP connection with provided parameters"""
+    try:
+        # Log the raw request for debugging
+        logger.info(f"LDAP test request - Content-Type: {request.content_type}")
+        logger.info(f"LDAP test request - Data type: {type(request.data)}")
+        
+        # Try to get JSON data from request
+        try:
+            data = request.get_json()
+            logger.info(f"Parsed request data: {data}")
+        except Exception as e:
+            logger.error(f"Error parsing JSON data: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': f'Invalid JSON data: {str(e)}'
+            })
+        
+        if not data:
+            logger.error("No data provided or data not in JSON format")
+            return jsonify({
+                'success': False,
+                'error': 'No data provided or invalid content type'
+            })
+        
+        server = data.get('server')
+        port = data.get('port')
+        bind_dn = data.get('bind_dn')
+        bind_password = data.get('bind_password')
+        base_dn = data.get('base_dn') 
+        use_ssl = data.get('use_ssl', False)
+        allow_anonymous = data.get('allow_anonymous', False)
+        
+        # Log the parsed parameters (not including password)
+        logger.info(f"LDAP test parameters - Server: {server}, Port: {port}")
+        logger.info(f"LDAP test parameters - Bind DN: {bind_dn}")
+        logger.info(f"LDAP test parameters - Base DN: {base_dn}")
+        logger.info(f"LDAP test parameters - SSL: {use_ssl}, Allow Anonymous: {allow_anonymous}")
+        
+        # Server and base_dn are always required
+        if not server or not port or not base_dn:
+            return jsonify({
+                'success': False,
+                'error': 'Server, port and base DN are required'
+            })
+        
+        # Check if credentials are incomplete (one provided but not the other)
+        if (bind_dn and not bind_password) or (not bind_dn and bind_password):
+            return jsonify({
+                'success': False,
+                'error': 'Both bind DN and password must be provided together'
+            })
+            
+        # Credentials are either both provided or both missing
+        has_credentials = bind_dn and bind_password
+        
+        # If anonymous binding is disabled and no credentials provided, fail early
+        if not allow_anonymous and not has_credentials:
+            return jsonify({
+                'success': False,
+                'error': 'Bind DN and password are required when anonymous binding is disabled'
+            })
+        
+        # Will we use anonymous binding?
+        use_anonymous = not has_credentials and allow_anonymous
+        
+        logger.info(f"LDAP Test - Anonymous binding allowed: {allow_anonymous}")
+        logger.info(f"LDAP Test - Credentials provided: {has_credentials}")
+        logger.info(f"LDAP Test - Will use anonymous: {use_anonymous}")
+        
+        # Try creating LDAPSync instance and connecting
+        try:
+            ldap_sync = LDAPSync(
+                server=server,
+                port=int(port) if port else None,
+                bind_dn=bind_dn,
+                bind_password=bind_password,
+                base_dn=base_dn,
+                use_ssl=use_ssl,
+                allow_anonymous=allow_anonymous
+            )
+            
+            conn = ldap_sync.connect()
+            logger.info(f"LDAP connection successful, connection object: {conn}")
+            
+            # Try to perform a test search to verify everything works
+            result = conn.search(
+                search_base=base_dn,
+                search_filter='(objectClass=*)',
+                search_scope='BASE',
+                attributes=['objectClass']
+            )
+            
+            if result:
+                # Check if we're authenticated (anonymous vs. bound)
+                bound_user = conn.bound
+                logger.info(f"Search successful. Authenticated: {bound_user}")
+                
+                # Get some basic info about the directory
+                logger.info(f"Connected to: {conn.server.host}")
+                logger.info(f"Authentication type: {'Anonymous' if use_anonymous else 'Authenticated'}")
+                
+                conn.unbind()
+                return jsonify({
+                    'success': True,
+                    'message': f'LDAP connection successful! {"(anonymous)" if use_anonymous else f"(authenticated as {bind_dn})"}'
+                })
+            else:
+                logger.warning(f"Search failed: {conn.result}")
+                conn.unbind()
+                return jsonify({
+                    'success': False,
+                    'error': f'Connected but search failed: {conn.result}'
+                })
+                
+        except Exception as e:
+            logger.error(f"LDAP connection test failed: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            })
+            
+    except Exception as e:
+        logger.error(f"Request error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f"Request error: {str(e)}"
+        })
+
 if __name__ == '__main__':
     # Add database initialization option
     if len(sys.argv) > 1 and sys.argv[1] == '--init-db':
         init_db()
         sys.exit(0)
     app.run(debug=True)
-

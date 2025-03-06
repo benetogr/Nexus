@@ -277,3 +277,63 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 });
+
+function testLdapConnection() {
+    // Get LDAP settings from form
+    const server = document.getElementById('LDAP_SERVER').value;
+    const port = document.getElementById('LDAP_PORT').value;
+    const bindDn = document.getElementById('LDAP_BIND_DN').value;
+    const bindPassword = document.getElementById('LDAP_BIND_PASSWORD').value;
+    const baseDn = document.getElementById('LDAP_BASE_DN').value;
+    const useSSL = document.getElementById('LDAP_USE_SSL').checked;
+    const allowAnonymous = document.getElementById('LDAP_ALLOW_ANONYMOUS').checked;
+    
+    const statusElement = document.getElementById('ldapStatus');
+    statusElement.textContent = 'Testing...';
+    statusElement.className = 'connection-status testing';
+    
+    console.log(`LDAP Test - Server: ${server}, Port: ${port}`);
+    console.log(`LDAP Test - Bind DN: ${bindDn ? 'Provided' : 'Empty'}, Password: ${bindPassword ? 'Provided' : 'Empty'}`);
+    console.log(`LDAP Test - Base DN: ${baseDn}, SSL: ${useSSL}, Allow Anonymous: ${allowAnonymous}`);
+    console.log(`LDAP Test - Current headers:`, document.querySelector('meta[name="csrf-token"]').content);
+    
+    fetch('/test-ldap-connection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            server: server,
+            port: port,
+            bind_dn: bindDn,
+            bind_password: bindPassword,
+            base_dn: baseDn,
+            use_ssl: useSSL,
+            allow_anonymous: allowAnonymous
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error('Response not OK:', response.status, response.statusText);
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('LDAP test response:', data);
+        if (data.success) {
+            statusElement.textContent = data.message || 'Connected successfully!';
+            statusElement.className = 'connection-status success';
+        } else {
+            statusElement.textContent = data.error || 'Connection failed';
+            statusElement.className = 'connection-status error';
+        }
+    })
+    .catch(error => {
+        console.error('LDAP test fetch error:', error);
+        statusElement.textContent = 'Request error: ' + error;
+        statusElement.className = 'connection-status error';
+    });
+}

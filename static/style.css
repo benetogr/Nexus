@@ -1995,3 +1995,29 @@ textarea.form-control {
 }
 
 // ...existing code...
+
+// ...existing code...
+
+.setting-item input[type="checkbox"] {
+    width: auto;
+    height: 18px;
+    width: 18px;
+    vertical-align: middle;
+    margin-right: 10px;
+}
+
+.setting-item .checkbox-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.help-text {
+    display: block;
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+// ...existing code...
